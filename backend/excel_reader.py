@@ -21,7 +21,9 @@ class ExcelReader:
         """Get total sales for a specific product."""
         if self.data is None:
             self.read_file()
-        return self.data[self.data['Product'] == product]['Sales'].sum()
+        sales = self.data[self.data['Product'] == product]['Sales'].sum()
+        print(f"DEBUG: Total sales for {product}: {sales}")
+        return sales
 
     def get_total_sales_by_product_and_month(self, product: str, month: int) -> float:
         """Get total sales for a specific product in a given month."""
@@ -31,7 +33,9 @@ class ExcelReader:
             (self.data['Product'] == product) &
             (self.data['Date'].dt.month == month)
         ]
-        return monthly_data['Sales'].sum()
+        sales = monthly_data['Sales'].sum()
+        print(f"DEBUG: Total sales for {product} in month {month}: {sales}")
+        return sales
 
 # Create a mock dataset
 def create_mock_dataset(file_path: str) -> None:
