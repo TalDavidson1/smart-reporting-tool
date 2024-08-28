@@ -1,0 +1,51 @@
+# Smart Reporting Tool - File Descriptions
+
+## Backend
+
+1. main.py
+   - Main FastAPI application file
+   - Sets up CORS, defines API endpoints, and initializes NLPHandler
+
+2. excel_reader.py
+   - Handles reading and processing Excel files
+   - Contains ExcelReader class and mock dataset creation function
+
+3. nlp_handler.py
+   - Processes natural language queries using spaCy
+   - Contains NLPHandler class for entity extraction and query processing
+
+4. requirements.txt
+   - Lists all Python dependencies for the backend
+
+## Frontend
+
+5. package.json
+   - Defines project metadata and dependencies for the frontend
+
+6. src/App.js
+   - Main React component for the Smart Reporting Tool
+   - Handles user input, API calls, and result display
+
+7. src/index.js
+   - Entry point for the React application
+   - Sets up the app for embedding
+
+8. src/ColorModeSwitcher.js
+   - Component for toggling between light and dark mode
+
+9. public/index.html
+   - HTML template for the React application
+
+10. public/manifest.json
+    - Web app manifest file for PWA support
+
+## Root Directory
+
+11. README.md
+    - Project overview, features, setup instructions, and usage guide
+
+12. .gitignore
+    - Specifies files and directories to be ignored by Git
+
+13. test-embed.html
+    - Example HTML file demonstrating how to embed the tool in a webpage
