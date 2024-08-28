@@ -1,0 +1,199 @@
+From 171b11a343c61172a850a2187f9a4cd6653fcce0 Mon Sep 17 00:00:00 2001
+From: "devin-ai-integration[bot]"
+ <158243242+devin-ai-integration[bot]@users.noreply.github.com>
+Date: Wed, 28 Aug 2024 12:44:31 +0000
+Subject: [PATCH] Initial setup: Add ExcelReader, NLPHandler, and
+ requirements.txt
+
+---
+ backend/excel_reader.py  |   8 ++-
+ backend/nlp_handler.py   | 113 +++++++++++++++++++++++++--------------
+ backend/requirements.txt |   5 ++
+ 3 files changed, 84 insertions(+), 42 deletions(-)
+ create mode 100644 backend/requirements.txt
+
+diff --git a/backend/excel_reader.py b/backend/excel_reader.py
+index f6dbb3c..8d8ed5b 100644
+--- a/backend/excel_reader.py
++++ b/backend/excel_reader.py
+@@ -21,7 +21,9 @@ class ExcelReader:
+         """Get total sales for a specific product."""
+         if self.data is None:
+             self.read_file()
+-        return self.data[self.data['Product'] == product]['Sales'].sum()
++        sales = self.data[self.data['Product'] == product]['Sales'].sum()
++        print(f"DEBUG: Total sales for {product}: {sales}")
++        return sales
+ 
+     def get_total_sales_by_product_and_month(self, product: str, month: int) -> float:
+         """Get total sales for a specific product in a given month."""
+@@ -31,7 +33,9 @@ class ExcelReader:
+             (self.data['Product'] == product) &
+             (self.data['Date'].dt.month == month)
+         ]
+-        return monthly_data['Sales'].sum()
++        sales = monthly_data['Sales'].sum()
++        print(f"DEBUG: Total sales for {product} in month {month}: {sales}")
++        return sales
+ 
+ # Create a mock dataset
+ def create_mock_dataset(file_path: str) -> None:
+diff --git a/backend/nlp_handler.py b/backend/nlp_handler.py
+index 0ce934f..d39140b 100644
+--- a/backend/nlp_handler.py
++++ b/backend/nlp_handler.py
+@@ -1,59 +1,91 @@
+ import spacy
++from spacy.matcher import Matcher
+ from excel_reader import ExcelReader
++import logging
++
++logging.basicConfig(level=logging.INFO)
++logger = logging.getLogger(__name__)
+ 
+ class NLPHandler:
+     def __init__(self):
+         self.nlp = spacy.load("en_core_web_sm")
+         self.excel_reader = ExcelReader("mock_sales_data.xlsx")
+         self.excel_reader.read_file()
++        self.matcher = Matcher(self.nlp.vocab)
++        self._setup_custom_entities()
+ 
+-    def process_query(self, query: str):
+-        doc = self.nlp(query.lower())
++    def _setup_custom_entities(self):
++        # Add custom patterns for products
++        product_pattern = [
++            {"LOWER": "product"},
++            {"TEXT": {"REGEX": "^[A-D]$"}}
++        ]
++        self.matcher.add("PRODUCT", [product_pattern])
+ 
+-        # Extract relevant information from the query
+-        product = None
+-        time_period = None
++        # Add custom patterns for months
++        month_pattern = [{"LOWER": {"IN": [
++            "january", "february", "march", "april", "may", "june",
++            "july", "august", "september", "october", "november", "december"
++        ]}}]
++        self.matcher.add("MONTH", [month_pattern])
+ 
+-        for ent in doc.ents:
+-            if ent.label_ == "PRODUCT":
+-                product = ent.text
+-            elif ent.label_ == "DATE":
+-                time_period = ent.text
++    def process_query(self, query: str):
++        try:
++            logger.info(f"Processing query: {query}")
++            doc = self.nlp(query)
++            logger.info(f"Tokenized query: {[token.text for token in doc]}")
+ 
+-        # If no specific entities are found, look for keywords
+-        if not product:
+-            product = self._find_product(doc)
+-        if not time_period:
+-            time_period = self._find_time_period(doc)
++            product, time_period = self._extract_entities(doc)
++            logger.info(f"Extracted entities - Product: {product}, Time Period: {time_period}")
+ 
+-        # Generate response based on extracted information
+-        if product and time_period:
+-            if time_period.lower() == "january":
+-                sales = self.excel_reader.get_total_sales_by_product_and_month(product, 1)
+-                return f"The total sales for {product} in {time_period} were ${sales:.2f}"
+-            else:
++            if product and time_period:
++                month_num = self._month_to_number(time_period)
++                logger.info(f"Converted time period to month number: {month_num}")
++                if month_num:
++                    sales = self.excel_reader.get_total_sales_by_product_and_month(product, month_num)
++                    logger.info(f"Retrieved sales for {product} in {time_period}: ${sales:.2f}")
++                    return f"The total sales for {product} in {time_period} were ${sales:.2f}"
++                else:
++                    sales = self.excel_reader.get_total_sales_by_product(product)
++                    logger.info(f"Retrieved total sales for {product}: ${sales:.2f}")
++                    return f"The total sales for {product} were ${sales:.2f}"
++            elif product:
+                 sales = self.excel_reader.get_total_sales_by_product(product)
++                logger.info(f"Retrieved total sales for {product}: ${sales:.2f}")
+                 return f"The total sales for {product} were ${sales:.2f}"
+-        elif product:
+-            sales = self.excel_reader.get_total_sales_by_product(product)
+-            return f"The total sales for {product} were ${sales:.2f}"
+-        else:
+-            return "I'm sorry, I couldn't understand your query. Please try asking about sales for a specific product or time period."
++            else:
++                logger.warning("Could not extract product or time period from query")
++                return "I'm sorry, I couldn't understand your query. Please ask about sales for a specific product or time period."
++        except Exception as e:
++            logger.error(f"Error processing query: {str(e)}")
++            return "An error occurred while processing your query. Please try again."
++
++    def _extract_entities(self, doc):
++        product = None
++        time_period = None
++
++        matches = self.matcher(doc)
++        logger.info(f"Matcher found {len(matches)} matches")
++
++        for match_id, start, end in matches:
++            span = doc[start:end]
++            if self.nlp.vocab.strings[match_id] == "PRODUCT":
++                # Capture the full product name (e.g., "Product A")
++                product = span.text
++                logger.info(f"Recognized product: {product}")
++            elif self.nlp.vocab.strings[match_id] == "MONTH":
++                time_period = span.text.capitalize()
++                logger.info(f"Recognized time period: {time_period}")
+ 
+-    def _find_product(self, doc):
+-        products = ["Product A", "Product B", "Product C"]
+-        for token in doc:
+-            if token.text in [p.lower() for p in products]:
+-                return token.text.capitalize()
+-        return None
++        return product, time_period
+ 
+-    def _find_time_period(self, doc):
+-        months = ["january", "february", "march", "april", "may", "june",
+-                  "july", "august", "september", "october", "november", "december"]
+-        for token in doc:
+-            if token.text in months:
+-                return token.text.capitalize()
+-        return None
++    def _month_to_number(self, month: str) -> int:
++        months = {
++            "january": 1, "february": 2, "march": 3, "april": 4,
++            "may": 5, "june": 6, "july": 7, "august": 8,
++            "september": 9, "october": 10, "november": 11, "december": 12
++        }
++        return months.get(month.lower())
+ 
+ # Example usage
+ if __name__ == "__main__":
+@@ -62,7 +94,8 @@ if __name__ == "__main__":
+     queries = [
+         "What was the total sales for Product A in January?",
+         "How much did Product B sell?",
+-        "Show me the sales for Product C",
++        "Show me the sales for Product C in March",
++        "What about Product D in December?",
+     ]
+ 
+     for query in queries:
+diff --git a/backend/requirements.txt b/backend/requirements.txt
+new file mode 100644
+index 0000000..696754b
+--- /dev/null
++++ b/backend/requirements.txt
+@@ -0,0 +1,5 @@
++fastapi==0.109.2
++uvicorn==0.27.1
++spacy==3.7.2
++pandas==2.2.2
++en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+-- 
+2.34.1
+
