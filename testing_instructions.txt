@@ -1,0 +1,94 @@
+# Smart Reporting Tool - Testing Instructions
+
+## Prerequisites
+- Python 3.8 or higher
+- Node.js 14 or higher
+- Git
+
+## Setting Up the Local Environment
+
+### Backend Setup
+1. Clone the repository:
+   ```
+   git clone https://github.com/your-username/smart-reporting-tool.git
+   cd smart-reporting-tool
+   ```
+
+2. Set up a Python virtual environment:
+   ```
+   python -m venv venv
+   source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+   ```
+
+3. Install backend dependencies:
+   ```
+   cd backend
+   pip install -r requirements.txt
+   ```
+
+4. Download the required spaCy model:
+   ```
+   python -m spacy download en_core_web_sm
+   ```
+
+### Frontend Setup
+1. Navigate to the frontend directory:
+   ```
+   cd ../frontend
+   ```
+
+2. Install frontend dependencies:
+   ```
+   npm install
+   ```
+
+## Running the Application
+
+### Starting the Backend Server
+1. From the `backend` directory, run:
+   ```
+   uvicorn main:app --reload
+   ```
+   The backend server should start running on `http://localhost:8000`.
+
+### Starting the Frontend Development Server
+1. Open a new terminal window, navigate to the `frontend` directory, and run:
+   ```
+   npm start
+   ```
+   The frontend development server should start and automatically open `http://localhost:3000` in your default browser.
+
+## Testing the Functionality
+
+1. Ensure both backend and frontend servers are running.
+
+2. Open your web browser and navigate to `http://localhost:3000` if it hasn't opened automatically.
+
+3. You should see the Smart Reporting Tool interface with an input field and a submit button.
+
+4. Test the NLP query functionality:
+   - Enter a query like "What was the total sales for Product A in January?"
+   - Click the "Submit Query" button.
+   - Verify that you receive a response with the relevant sales information.
+
+5. Try different queries to test various aspects of the tool:
+   - "How much did Product B sell?"
+   - "Show me the sales for Product C in March"
+   - "What about Product D in December?"
+
+6. Verify that the responses are accurate and match the data in the mock Excel file.
+
+7. Test the color mode switcher by clicking the sun/moon icon in the top right corner.
+
+## Troubleshooting
+
+If you encounter any issues:
+
+1. Ensure all dependencies are correctly installed.
+2. Check that both backend and frontend servers are running without errors.
+3. Verify that the backend URL in the frontend code (`src/App.js`) matches the running backend server address.
+4. If you see CORS errors, ensure the frontend origin is allowed in the backend CORS configuration.
+
+## Reporting Issues
+
+If you find any bugs or unexpected behavior, please report them by opening an issue on the GitHub repository, providing as much detail as possible about the steps to reproduce the problem.

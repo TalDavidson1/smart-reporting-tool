@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Reporting Tool - Test Embed</title>
+    <script src="frontend/build/static/js/main.2a8ca9fd.js"></script>
+</head>
+<body>
+    <h1>Smart Reporting Tool - Test Embed</h1>
+    <div id="smart-reporting-tool-container"></div>
+
+    <script>
+        // Wait for the SmartReportingTool to be loaded
+        window.onload = function() {
+            if (window.SmartReportingTool) {
+                const { App, React, ReactDOM, ChakraProvider } = window.SmartReportingTool;
+
+                const config = {
+                    apiUrl: 'http://localhost:8000',
+                    // Add any other configuration options here
+                };
+
+                const container = document.getElementById('smart-reporting-tool-container');
+                const root = ReactDOM.createRoot(container);
+                root.render(
+                    React.createElement(ChakraProvider, null,
+                        React.createElement(App, config)
+                    )
+                );
+            } else {
+                console.error('Failed to initialize SmartReportingTool: SmartReportingTool not found');
+            }
+        };
+    </script>
+</body>
+</html>
